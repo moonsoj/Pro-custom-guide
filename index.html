@@ -1134,7 +1134,16 @@ function updateCapture(sectionId) {
     paths.forEach(path => {
       const img = document.createElement('img');
       img.className = 'capture-image';
-      img.src = encodeURI(path);
+      // NFC로 먼저 시도, 실패 시 NFD로 재시도 (GitHub 업로드 시 일부 파일이 macOS NFD로 저장된 케이스 대응)
+      const encNFC = encodeURI(path);
+      const encNFD = encodeURI(path.normalize('NFD'));
+      img.src = encNFC;
+      img.onerror = function() {
+        if (!img.dataset.retriedNFD && encNFC !== encNFD) {
+          img.dataset.retriedNFD = '1';
+          img.src = encNFD;
+        }
+      };
       img.alt = sectionId;
       img.addEventListener('click', () => {
         lightboxImg.src = img.src;
